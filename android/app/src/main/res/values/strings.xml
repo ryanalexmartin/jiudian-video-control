@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">酒店影像控制</string>
+
+    <!-- Connect Screen -->
+    <string name="connect_title">酒店影像控制系統</string>
+    <string name="connect_subtitle">遠端控制面板</string>
+    <string name="server_ip_label">伺服器 IP 位址</string>
+    <string name="server_ip_hint">192.168.1.100</string>
+    <string name="server_port_label">連接埠</string>
+    <string name="server_port_hint">8080</string>
+    <string name="connect_button">連線</string>
+    <string name="connecting">連線中…</string>
+    <string name="disconnect_button">斷線</string>
+    <string name="saved_servers">已儲存的伺服器</string>
+    <string name="connection_failed">連線失敗</string>
+    <string name="connection_success">已連線</string>
+
+    <!-- Dashboard Screen -->
+    <string name="dashboard_title">控制面板</string>
+    <string name="output_preview">輸出預覽</string>
+    <string name="input_sources">輸入來源</string>
+    <string name="preset_scenes">預設場景</string>
+    <string name="input_label">輸入 %d</string>
+    <string name="connected">已連線</string>
+    <string name="disconnected">未連線</string>
+    <string name="no_signal">無訊號</string>
+
+    <!-- Scene Presets -->
+    <string name="scene_fullscreen">全螢幕</string>
+    <string name="scene_pip">子母畫面</string>
+    <string name="scene_side_by_side">並排</string>
+    <string name="scene_quad">四分割</string>
+
+    <!-- Scenes Screen -->
+    <string name="scenes_title">場景管理</string>
+    <string name="scene_detail">場景詳情</string>
+    <string name="layers">圖層</string>
+    <string name="layer_label">圖層 %d</string>
+    <string name="apply_scene">套用場景</string>
+    <string name="scene_applied">場景已套用</string>
+    <string name="position">位置</string>
+    <string name="size">大小</string>
+    <string name="opacity">透明度</string>
+    <string name="border">邊框</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">設定</string>
+    <string name="server_info">伺服器資訊</string>
+    <string name="preview_quality">預覽畫質</string>
+    <string name="quality_high">高畫質</string>
+    <string name="quality_medium">中畫質</string>
+    <string name="quality_low">低畫質</string>
+    <string name="about">關於</string>
+    <string name="version">版本</string>
+    <string name="app_description">酒店影像控制系統 Android 遠端控制應用程式</string>
+
+    <!-- Status -->
+    <string name="fps_label">FPS</string>
+    <string name="cpu_label">CPU</string>
+    <string name="connections_label">連線數</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">控制面板</string>
+    <string name="nav_scenes">場景</string>
+    <string name="nav_settings">設定</string>
+</resources>

@@ -1,0 +1,415 @@
+openapi: 3.1.0
+info:
+  title: 酒店影像控制系統 API
+  description: Video control system REST/WebSocket API for routing capture card inputs to display outputs.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /api/status:
+    get:
+      summary: 系統狀態
+      description: Get system status including FPS, CPU usage, and connection count.
+      operationId: getStatus
+      responses:
+        '200':
+          description: System status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+
+  /api/inputs:
+    get:
+      summary: 輸入源列表
+      description: List all input sources and their connection status.
+      operationId: listInputs
+      responses:
+        '200':
+          description: List of inputs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InputStatus'
+
+  /api/inputs/{inputId}/preview:
+    get:
+      summary: 輸入預覽
+      description: Get a JPEG preview thumbnail of an input source.
+      operationId: getInputPreview
+      parameters:
+        - name: inputId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: JPEG preview image
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Input not found or no frame available
+
+  /api/outputs:
+    get:
+      summary: 輸出列表
+      description: List all outputs and their active scene.
+      operationId: listOutputs
+      responses:
+        '200':
+          description: List of outputs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutputStatus'
+
+  /api/outputs/{outputId}/source:
+    post:
+      summary: 快速切換輸入
+      description: Quick-switch an output to show a single input fullscreen.
+      operationId: switchOutputSource
+      parameters:
+        - name: outputId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SourceSwitchRequest'
+      responses:
+        '200':
+          description: Source switched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /api/scenes:
+    get:
+      summary: 場景列表
+      description: List all available scenes (presets and custom).
+      operationId: listScenes
+      responses:
+        '200':
+          description: List of scenes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Scene'
+    post:
+      summary: 建立場景
+      description: Create a new custom scene.
+      operationId: createScene
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSceneRequest'
+      responses:
+        '200':
+          description: Scene created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Scene'
+
+  /api/scenes/{sceneId}:
+    put:
+      summary: 更新場景
+      description: Update an existing scene.
+      operationId: updateScene
+      parameters:
+        - name: sceneId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSceneRequest'
+      responses:
+        '200':
+          description: Scene updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Scene'
+        '404':
+          description: Scene not found
+
+  /api/scenes/{sceneId}/apply:
+    post:
+      summary: 套用場景
+      description: Apply a scene to the output with optional transition effect.
+      operationId: applyScene
+      parameters:
+        - name: sceneId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplySceneRequest'
+      responses:
+        '200':
+          description: Scene applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Scene not found
+
+components:
+  schemas:
+    SystemStatus:
+      type: object
+      properties:
+        fps:
+          type: number
+          description: Current rendering FPS
+        cpu_percent:
+          type: number
+          description: CPU usage percentage
+        ws_connections:
+          type: integer
+          description: Number of active WebSocket connections
+        uptime_seconds:
+          type: number
+          description: Server uptime in seconds
+        dev_mode:
+          type: boolean
+          description: Whether running in dev mode (test patterns)
+        num_inputs:
+          type: integer
+        num_outputs:
+          type: integer
+
+    InputStatus:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        connected:
+          type: boolean
+        has_frame:
+          type: boolean
+
+    OutputStatus:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        active:
+          type: boolean
+        active_scene_id:
+          type: string
+          nullable: true
+        monitor_index:
+          type: integer
+
+    Layer:
+      type: object
+      required: [input_id]
+      properties:
+        input_id:
+          type: integer
+        x:
+          type: integer
+          default: 0
+        y:
+          type: integer
+          default: 0
+        width:
+          type: integer
+          default: 1920
+        height:
+          type: integer
+          default: 1080
+        z_order:
+          type: integer
+          default: 0
+        alpha:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 1.0
+        border_width:
+          type: integer
+          minimum: 0
+          default: 0
+        border_color:
+          type: string
+          default: "#00C8FF"
+        visible:
+          type: boolean
+          default: true
+
+    Scene:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Layer'
+        background_color:
+          type: string
+          default: "#0B0B1E"
+        is_default:
+          type: boolean
+
+    CreateSceneRequest:
+      type: object
+      required: [name, layers]
+      properties:
+        name:
+          type: string
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Layer'
+        background_color:
+          type: string
+          default: "#0B0B1E"
+
+    UpdateSceneRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Layer'
+        background_color:
+          type: string
+
+    ApplySceneRequest:
+      type: object
+      properties:
+        transition:
+          type: string
+          enum: [cut, fade, wipe_left, wipe_right]
+          default: fade
+        duration:
+          type: number
+          nullable: true
+
+    SourceSwitchRequest:
+      type: object
+      required: [input_id]
+      properties:
+        input_id:
+          type: integer
+        transition:
+          type: string
+          default: fade
+
+    MessageResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+
+    # WebSocket message schemas (for documentation)
+    WebSocketStateSyncMessage:
+      type: object
+      description: Sent by server to clients on connection and state changes
+      properties:
+        type:
+          type: string
+          const: state_sync
+        data:
+          type: object
+          properties:
+            active_scene:
+              type: object
+              nullable: true
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+            inputs:
+              type: array
+              items:
+                $ref: '#/components/schemas/InputStatus'
+            scenes:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  is_default:
+                    type: boolean
+            fps:
+              type: number
+            timestamp:
+              type: number
+
+    WebSocketPreviewMessage:
+      type: object
+      description: Sent by server with base64-encoded JPEG preview frames
+      properties:
+        type:
+          type: string
+          const: preview_frame
+        data:
+          type: object
+          properties:
+            output_id:
+              type: integer
+            frame:
+              type: string
+              description: Base64-encoded JPEG image
+
+    WebSocketCommand:
+      type: object
+      description: Sent by client to server
+      properties:
+        command:
+          type: string
+          enum: [apply_scene, switch_input, get_state, get_preview]
+        scene_id:
+          type: string
+        input_id:
+          type: integer
+        transition:
+          type: string

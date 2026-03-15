@@ -41,6 +41,12 @@ android/.idea/
 android/captures/
 android/*.apk
 
+# Android SDK (symlinked or local)
+build-tools/
+licenses/
+platform-tools/
+platforms/
+
 # Logs
 *.log
 

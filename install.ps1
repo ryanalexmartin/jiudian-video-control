@@ -24,6 +24,8 @@ function Get-PythonPath {
     foreach ($cmd in @("python", "python3", "py")) {
         $p = Get-Command $cmd -ErrorAction SilentlyContinue
         if ($p) {
+            # Skip the Microsoft Store stub (WindowsApps)
+            if ($p.Source -like "*WindowsApps*") { continue }
             $ver = & $cmd --version 2>&1
             if ($ver -match "(\d+\.\d+\.\d+)") {
                 $v = [version]$Matches[1]
@@ -90,11 +92,11 @@ if (-not (Test-Path "$VenvDir\Scripts\python.exe")) {
 }
 
 $VenvPython = "$VenvDir\Scripts\python.exe"
-$VenvPip = "$VenvDir\Scripts\pip.exe"
 
 Write-Host "     Installing dependencies (this may take a minute)..." -ForegroundColor Gray
-& $VenvPip install --upgrade pip --quiet 2>&1 | Out-Null
-& $VenvPip install -r "$ServerDir\requirements.txt" --quiet
+& $VenvPython -m ensurepip --upgrade 2>&1 | Out-Null
+& $VenvPython -m pip install --upgrade pip --quiet 2>&1 | Out-Null
+& $VenvPython -m pip install -r "$ServerDir\requirements.txt"
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Failed to install dependencies." -ForegroundColor Red
     exit 1

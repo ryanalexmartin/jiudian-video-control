@@ -42,6 +42,19 @@ def _enumerate_windows_win32() -> list[dict]:
         if win32gui.IsIconic(hwnd):
             return
 
+        # Skip cloaked windows (hidden UWP apps that report as visible)
+        try:
+            import ctypes
+            DWMWA_CLOAKED = 14
+            cloaked = ctypes.c_int(0)
+            ctypes.windll.dwmapi.DwmGetWindowAttribute(
+                hwnd, DWMWA_CLOAKED, ctypes.byref(cloaked), ctypes.sizeof(cloaked)
+            )
+            if cloaked.value:
+                return
+        except Exception:
+            pass
+
         # Get window rect
         try:
             left, top, right, bottom = win32gui.GetWindowRect(hwnd)
@@ -61,12 +74,16 @@ def _enumerate_windows_win32() -> list[dict]:
             pass
 
         window_name = win32gui.GetWindowText(hwnd) or ""
-        # Skip windows with no title (usually invisible helper windows)
-        if not window_name:
+        owner_name = _get_process_name_win32(pid)
+
+        # Skip small no-title windows (helper/background windows),
+        # but keep large no-title windows (fullscreen video players)
+        if not window_name and w < 800:
             return
 
-        # Get the executable name as owner_name
-        owner_name = _get_process_name_win32(pid)
+        # Use exe name as fallback label for untitled windows
+        if not window_name:
+            window_name = owner_name
 
         results.append({
             "window_id": hwnd,

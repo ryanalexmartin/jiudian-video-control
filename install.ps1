@@ -8,7 +8,6 @@ param(
     [string]$InstallDir = "$env:LOCALAPPDATA\JiudianVideoControl"
 )
 
-$ErrorActionPreference = "Stop"
 $RepoUrl = "https://github.com/ryanalexmartin/jiudian-video-control.git"
 $PythonMinVersion = [version]"3.10"
 $VenvDir = "$InstallDir\.venv"
@@ -66,16 +65,18 @@ Write-Host "[1/5] Python found: $PythonExe" -ForegroundColor Green
 if (Test-Path "$InstallDir\.git") {
     Write-Host "[2/5] Updating existing installation..." -ForegroundColor Cyan
     Push-Location $InstallDir
-    git pull --ff-only 2>&1 | Out-Null
+    $gitOut = git pull --ff-only 2>&1 | Out-String
     Pop-Location
+    Write-Host "     git pull done" -ForegroundColor Gray
 } else {
     Write-Host "[2/5] Cloning repository..." -ForegroundColor Cyan
     if (Test-Path $InstallDir) {
         Remove-Item $InstallDir -Recurse -Force
     }
-    git clone $RepoUrl $InstallDir
+    $gitOut = git clone $RepoUrl $InstallDir 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) {
         Write-Host "ERROR: git clone failed. Make sure git is installed." -ForegroundColor Red
+        Write-Host $gitOut -ForegroundColor Red
         exit 1
     }
 }
@@ -94,9 +95,9 @@ if (-not (Test-Path "$VenvDir\Scripts\python.exe")) {
 $VenvPython = "$VenvDir\Scripts\python.exe"
 
 Write-Host "     Installing dependencies (this may take a minute)..." -ForegroundColor Gray
-& $VenvPython -m ensurepip --upgrade 2>&1 | Out-Null
-& $VenvPython -m pip install --upgrade pip --quiet 2>&1 | Out-Null
-& $VenvPython -m pip install -r "$ServerDir\requirements.txt"
+& $VenvPython -m ensurepip --upgrade 2>&1 | Out-String | Out-Null
+& $VenvPython -m pip install --upgrade pip --quiet 2>&1 | Out-String | Out-Null
+& $VenvPython -m pip install -r "$ServerDir\requirements.txt" 2>&1 | ForEach-Object { Write-Host "     $_" -ForegroundColor Gray }
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Failed to install dependencies." -ForegroundColor Red
     exit 1

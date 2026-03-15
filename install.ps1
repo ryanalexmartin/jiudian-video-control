@@ -62,23 +62,50 @@ Write-Host "[1/5] Python found: $PythonExe" -ForegroundColor Green
 
 # ── 2. Clone or update repo ─────────────────────────────────
 
-if (Test-Path "$InstallDir\.git") {
+$HasGit = Get-Command git -ErrorAction SilentlyContinue
+
+if ($HasGit -and (Test-Path "$InstallDir\.git")) {
     Write-Host "[2/5] Updating existing installation..." -ForegroundColor Cyan
     Push-Location $InstallDir
     $gitOut = git pull --ff-only 2>&1 | Out-String
     Pop-Location
-    Write-Host "     git pull done" -ForegroundColor Gray
-} else {
+    Write-Host "     Updated" -ForegroundColor Gray
+} elseif ($HasGit) {
     Write-Host "[2/5] Cloning repository..." -ForegroundColor Cyan
     if (Test-Path $InstallDir) {
         Remove-Item $InstallDir -Recurse -Force
     }
     $gitOut = git clone $RepoUrl $InstallDir 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "ERROR: git clone failed. Make sure git is installed." -ForegroundColor Red
-        Write-Host $gitOut -ForegroundColor Red
-        exit 1
+        Write-Host "     git clone failed, falling back to ZIP download..." -ForegroundColor Yellow
+        $HasGit = $null  # Fall through to ZIP
     }
+}
+
+if (-not $HasGit) {
+    Write-Host "[2/5] Downloading ZIP (git not available)..." -ForegroundColor Cyan
+    $ZipUrl = "https://github.com/ryanalexmartin/jiudian-video-control/archive/refs/heads/main.zip"
+    $ZipPath = "$env:TEMP\jiudian-video-control.zip"
+    $ExtractPath = "$env:TEMP\jiudian-video-control-extract"
+
+    if (Test-Path $InstallDir) {
+        Remove-Item $InstallDir -Recurse -Force
+    }
+    if (Test-Path $ExtractPath) {
+        Remove-Item $ExtractPath -Recurse -Force
+    }
+
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipPath -UseBasicParsing
+    Expand-Archive -Path $ZipPath -DestinationPath $ExtractPath -Force
+
+    # The ZIP extracts to a subfolder named jiudian-video-control-main
+    $Extracted = Get-ChildItem $ExtractPath | Select-Object -First 1
+    Move-Item $Extracted.FullName $InstallDir
+
+    Remove-Item $ZipPath -Force
+    Remove-Item $ExtractPath -Recurse -Force
+    Write-Host "     Downloaded and extracted" -ForegroundColor Gray
 }
 
 Write-Host "     Installed to: $InstallDir" -ForegroundColor Gray
